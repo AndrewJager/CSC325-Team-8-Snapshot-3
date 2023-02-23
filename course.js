@@ -48,6 +48,27 @@ class Course {
                 $semester: semester
             });
     }
+
+    static courseExists(db, dept, code, semester) {
+        return new Promise((resolve, reject)=>{
+            db.get('SELECT * FROM ' + this.tableName
+            + ' WHERE dept = $dept'
+            + ' AND code = $code'
+            + ' AND semester = $semester',
+            {
+                $dept: dept,
+                $code: code,
+                $semester: semester
+            }, (err, row) => {
+                if (row === undefined) {
+                    resolve(false);
+                }
+                else {
+                    resolve(true);
+                }
+            });
+        });
+    }
 }
 
 module.exports = Course;

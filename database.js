@@ -70,6 +70,12 @@ module.exports = {
         let db = new sqlite3.Database(dbPath);
 
         return Course.deleteCourse(db, dept, code, semester);
+    },
+
+    courseExists(dept, code, semester) {
+        let db = new sqlite3.Database(dbPath);
+
+        return Course.courseExists(db, dept, code, semester);
     }
 };
 
