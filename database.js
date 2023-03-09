@@ -3,6 +3,7 @@ const fs = require("node:fs");
 const sqlite3 = require('sqlite3').verbose();
 
 const Course = require('./course');
+const Color = require('./color');
 
 const schemaPath = 'data/schema.txt';
 const dbPath = 'data/data.db';
@@ -38,17 +39,7 @@ module.exports = {
                     } 
 
                     // Run schema edits that have not been run previously
-                    for (let i = editsCount - 1; i < sqlCommands.length; i++) {
-                        db.run(sqlCommands[i]);
-
-                        // Log the edit
-                        db.run('INSERT INTO ' + dbEditTable + '(editMessage, editDate)'
-                            + ' VALUES($message,'
-                            + ' datetime(\'now\', \'localtime\'));',
-                            {
-                                $message: sqlCommands[i]
-                            });
-                    }
+                    runDBEdits(db, sqlCommands, editsCount);
                 });
             });
         });
@@ -76,6 +67,18 @@ module.exports = {
         let db = new sqlite3.Database(dbPath);
 
         return Course.courseExists(db, dept, code, semester);
+    },
+
+    getAvailableColor() {
+        let db = new sqlite3.Database(dbPath);
+
+        return Color.getAvailableColor(db);
+    },
+
+    setColorUsed(hex) {
+        let db = new sqlite3.Database(dbPath);
+
+        return Color.setColorUsed(db, hex);
     }
 };
 
@@ -115,5 +118,28 @@ function createDB(db, editTable, row) {
         else {
             resolve();
         }
+    });
+}
+
+async function runDBEdits(db, sqlCommands, editsCount) {        
+    for (let i = editsCount - 1; i < sqlCommands.length; i++) {
+        
+        await runEdit(db, sqlCommands[i]);             
+    }
+}
+
+function runEdit(db, edit) {
+    return new Promise((resolve, reject)=>{
+        db.run(edit, {}, (err, row) => {
+            // Log the edit
+            db.run('INSERT INTO ' + dbEditTable + '(editMessage, editDate)'
+            + ' VALUES($message,'
+            + ' datetime(\'now\', \'localtime\'));',
+            {
+                $message: edit
+            }, (err, row) => {
+                resolve();
+            });
+        });
     });
 }

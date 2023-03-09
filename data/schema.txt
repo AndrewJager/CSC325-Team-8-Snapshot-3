@@ -16,6 +16,26 @@ CREATE TABLE Courses (
 	code TEXT NOT NULL,
 	semester TEXT NOT NULL
 );
+^
+
+CREATE TABLE Colors (
+    hex TEXT NOT NULL,
+    available INTEGER
+);
+^
+
+INSERT INTO Colors (hex, available)
+VALUES 
+   ("A060D0", 1),
+   ("D52C37", 1),
+   ("FF92B5", 1),
+   ("3FB346", 1),
+   ("FF9E00", 1),
+   ("29C1C1", 1),
+   ("E75F4D", 1),
+   ("4A6FE3", 1),
+   ("038664", 1),
+   ("C7AB1C", 1);
 
 
 -- Do not include the '^' after the last command!

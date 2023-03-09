@@ -16,6 +16,9 @@ module.exports = {
 		const dept = interaction.options.getString('dept').toUpperCase();
 		const course = interaction.options.getString('classcode');
 		const semester = interaction.options.getString('semester');
+
+        // Any message that should not cause the class creation to abort should be added to this variable
+        let warning = "";
         
         /* testing colors but it ain't working atm so ignore for now
         const colorOriginal = Color('rbg(255, 255, 255');
@@ -31,6 +34,15 @@ module.exports = {
             const studentsRole = course + " Students";
             const veteranRole = course + " Veteran";
 
+            let studentColor = await database.getAvailableColor();
+            if (studentColor === "No available color") {
+                studentColor = "000000";
+                warning += 'All colors in the database have been used! Defaulting student role color to #000000' + '\n';
+            }
+            else {
+                database.setColorUsed(studentColor);
+            }
+
             // Create student role, if it doesn't already exist
             if (!interaction.guild.roles.cache.find(role => role.name == studentsRole)) {
                 await interaction.guild.roles.create({
@@ -41,8 +53,10 @@ module.exports = {
                                 PermissionsBitField.Flags.ChangeNickname,
                                 PermissionsBitField.Flags.AddReactions, 
                                 PermissionsBitField.Flags.AttachFiles],
-                    color: Math.floor(Math.random() * (0xFFFFFF + 1))
+                    color: studentColor
                 });
+
+                
             }
             // Create veteran role, if it doesn't already exist
             if (!interaction.guild.roles.cache.find(role => role.name == veteranRole)) {
@@ -54,7 +68,7 @@ module.exports = {
                                 PermissionsBitField.Flags.ChangeNickname,
                                 PermissionsBitField.Flags.AddReactions, 
                                 PermissionsBitField.Flags.AttachFiles],
-                    color: Math.floor(Math.random() * (0xFFFFFF + 1))
+                    color: studentColor
                 });
             }
 
@@ -110,7 +124,7 @@ module.exports = {
                 });
             });
             
-            await interaction.reply({ content: 'Created class ' + dept
+            await interaction.reply({ content: warning + 'Created class ' + dept
                             + ' ' + course + ' in semester ' + semester, ephemeral: true });
         }
 	},
