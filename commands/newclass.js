@@ -1,6 +1,7 @@
 const { SlashCommandBuilder, ChannelType, PermissionsBitField, PermissionFlagsBits, UserFlagsBitField  } = require('discord.js');
 const Course = require('../course');
-// const Color = require('color');
+const Color = require('color');
+const fs = require('fs');
 
 module.exports = {
 	data: new SlashCommandBuilder()
@@ -16,13 +17,13 @@ module.exports = {
 		const dept = interaction.options.getString('dept').toUpperCase();
 		const course = interaction.options.getString('classcode');
 		const semester = interaction.options.getString('semester');
+        
+        //howto array
+        const howArray = fs.readFileSync('./howto.txt').toString().split("\n");
 
         // Any message that should not cause the class creation to abort should be added to this variable
         let warning = "";
         
-        /* testing colors but it ain't working atm so ignore for now
-        const colorOriginal = Color('rbg(255, 255, 255');
-        const colorDarken = colorOriginal.darken(0.5);            */
         const dbv = await database.courseExists(dept, course, semester);
         if (dbv) {
                 await interaction.reply({ content: 'Sorry, but class ' + dept + course + ' - ' + semester + ' already exists.', ephemeral: true});
@@ -36,13 +37,14 @@ module.exports = {
 
             let studentColor = await database.getAvailableColor();
             if (studentColor === "No available color") {
-                studentColor = "000000";
-                warning += 'All colors in the database have been used! Defaulting student role color to #000000' + '\n';
+                studentColor = "#ffffff";
+                warning += 'All colors in the database have been used! Defaulting student role color to #FFFFFF' + '\n';
             }
             else {
                 database.setColorUsed(studentColor);
             }
 
+            
             // Create student role, if it doesn't already exist
             if (!interaction.guild.roles.cache.find(role => role.name == studentsRole)) {
                 await interaction.guild.roles.create({
@@ -68,7 +70,7 @@ module.exports = {
                                 PermissionsBitField.Flags.ChangeNickname,
                                 PermissionsBitField.Flags.AddReactions, 
                                 PermissionsBitField.Flags.AttachFiles],
-                    color: studentColor
+                    color: Color(studentColor).darken(0.4).hex()
                 });
             }
 
@@ -111,7 +113,11 @@ module.exports = {
                     type: ChannelType.GuildText,
                     parent: category.id,
                     permissionOverwrites: profChannelPerms
-                });
+                }).then(channel => {
+                        for(i in howArray) {
+                            channel.send(howArray[i])
+                        }
+                    })
                 interaction.guild.channels.create({
                     name: 'introduce-yourself',
                     type: ChannelType.GuildText,
