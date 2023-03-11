@@ -36,6 +36,11 @@ VALUES
    ("#4A6FE3", 1),
    ("#038664", 1),
    ("#C7AB1C", 1);
+^
 
+CREATE TABLE Buttons (
+	buttonID TEXT NOT NULL,
+	roleID TEXT NOT NULL
+);
 
 -- Do not include the '^' after the last command!

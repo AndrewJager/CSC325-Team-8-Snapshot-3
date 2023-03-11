@@ -1,5 +1,6 @@
 const { SlashCommandBuilder, EmbedBuilder, Embed, PermissionFlagsBits, ButtonStyle, ActionRowBuilder, ButtonBuilder, ActionRow, TeamMemberMembershipState } = require('discord.js');
-const wait = require('node:timers/promises').setTimeout;
+
+const Button = require('../button');
 
 module.exports = {
 	data: new SlashCommandBuilder()
@@ -12,9 +13,14 @@ module.exports = {
 		.addRoleOption(option => option.setName(`role4`).setDescription('4th role you want to add.').setRequired(false))
 		.addRoleOption(option => option.setName(`role5`).setDescription('5th role you want to add.').setRequired(false)),
 
-	async execute(interaction, client) {
+	async execute(interaction, database) {
 		const roles = [];
 		const buttons = [];
+
+		// Delete existing buttons from database
+		await database.deleteAllButtons();
+
+		// TODO: Should we delete existing role assignment messages? Would need to store their ids
 
 		// Declare a map to associate each button with a role
 		const roleMap = new Map();
@@ -38,39 +44,13 @@ module.exports = {
 		// Set the roleMap entries with the button ids and the roles
 		for (let i = 0; i < roles.length; ++i) {
 			roleMap.set(`button${i + 1}`, roles[i]);
-		}
-		
 
-		// if (role1 !== null) {
-		// 	roles.push(new ButtonBuilder()
-		// 		.setCustomId('button1')
-		// 		.setLabel(`${role1.name}`)
-		// 		.setStyle(ButtonStyle.Secondary));
-		// }
-		// if (role2 !== null) {
-		// 	roles.push(new ButtonBuilder()
-		// 		.setCustomId('button2')
-		// 		.setLabel(`${role2.name}`)
-		// 		.setStyle(ButtonStyle.Secondary));
-		// }
-		// if (role3 !== null) {
-		// 	roles.push(new ButtonBuilder()
-		// 		.setCustomId('button3')
-		// 		.setLabel(`${role3.name}`)
-		// 		.setStyle(ButtonStyle.Secondary));
-		// }
-		// if (role4 !== null) {
-		// 	roles.push(new ButtonBuilder()
-		// 		.setCustomId('button4')
-		// 		.setLabel(`${role4.name}`)
-		// 		.setStyle(ButtonStyle.Secondary));
-		// }
-		// if (role5 !== null) {
-		// 	roles.push(new ButtonBuilder()
-		// 		.setCustomId('button5')
-		// 		.setLabel(`${role5.name}`)
-		// 		.setStyle(ButtonStyle.Secondary));
-		// }
+			if (roles[i]) { // Check that role exists
+				// Save link between button and the role it assigns
+				database.saveButton(new Button(`button${i + 1}`, roles[i].id));
+			}
+			
+		}
 
 		const buttonRow1 = new ActionRowBuilder()
 			.addComponents(buttons)
@@ -98,30 +78,6 @@ module.exports = {
 			])
 
 		await interaction.reply({ embeds: [embed], components: [buttonRow1] });
-
-		const collector = await interaction.channel.createMessageComponentCollector();
-			
-		collector.on('collect', async i => {
-			const member = i.member;
-			let id = i.customId;
-
-			// Get the role associated with the button id from the map
-			let role = roleMap.get(id);
-			if (role) {
-				if (!member.roles.cache.has(role.id)) {
-					await member.roles.add(role);
-					await i.reply({ content: 'Role added', ephemeral:true });
-				} else {
-					await member.roles.remove(role);
-					await i.reply({ content: 'Role removed', ephemeral:true });
-				}
-			await wait(4000);
-			await i.deleteReply();
-			} else {
-				await i.reply({ content: 'nothing happened (this is an error)', ephemeral:true });
-    			return;
-			}
-		});
 	},
 
 

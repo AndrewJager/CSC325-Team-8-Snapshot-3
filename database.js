@@ -4,6 +4,7 @@ const sqlite3 = require('sqlite3').verbose();
 
 const Course = require('./course');
 const Color = require('./color');
+const Button = require('./button');
 
 const schemaPath = 'data/schema.txt';
 const dbPath = 'data/data.db';
@@ -79,6 +80,24 @@ module.exports = {
         let db = new sqlite3.Database(dbPath);
 
         return Color.setColorUsed(db, hex);
+    },
+
+    saveButton: function(button) {
+        let db = new sqlite3.Database(dbPath);
+
+        button.saveToDB(db);
+    },
+
+    deleteAllButtons: function() {
+        let db = new sqlite3.Database(dbPath);
+
+        return Button.deleteAll(db);
+    },
+
+    getRoleIDByButtonID: function(btnID) {
+        let db = new sqlite3.Database(dbPath);
+        
+        return Button.getRoleIDByButtonID(db, btnID)
     }
 };
 

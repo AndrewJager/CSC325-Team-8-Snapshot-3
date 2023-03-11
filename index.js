@@ -1,5 +1,6 @@
 // Imports
 const {Client, Collection, Events, GatewayIntentBits} = require('discord.js');
+const wait = require('node:timers/promises').setTimeout;
 const fs = require("node:fs");
 const path = require("node:path");
 
@@ -47,6 +48,22 @@ client.on(Events.InteractionCreate, async interaction => {
 			await command.autocomplete(interaction, database);
 		} catch (error) {
 			console.error(error);
+		}
+	}
+	if (interaction.isButton()) {
+		const roleID = await database.getRoleIDByButtonID(interaction.customId);
+		if (roleID !== "No id found!"){
+			const member = interaction.member;
+			const role = interaction.guild.roles.cache.find(role => role.id == roleID);
+			if (!member.roles.cache.has(role.id)) {
+				await member.roles.add(role);
+				await interaction.reply({ content: 'Role ' + role.name + ' added', ephemeral:true });
+			} else {
+				await member.roles.remove(role);
+				await interaction.reply({ content: 'Role ' + role.name + ' removed', ephemeral:true });
+			}
+			await wait(4000);
+			await interaction.deleteReply();
 		}
 	}
 	if (!interaction.isChatInputCommand()) return;
