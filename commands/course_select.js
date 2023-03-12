@@ -22,38 +22,27 @@ module.exports = {
 
 		// TODO: Should we delete existing role assignment messages? Would need to store their ids
 
-		// Declare a map to associate each button with a role
-		const roleMap = new Map();
-
 		for (i = 1; i <= 5; ++i) {
 			roles.push(interaction.options.getRole(`role${i}`));
 		}
 
 		// Loop through the roles array and create a button for each role
 		for (i = 0; i < roles.length; ++i) {
-			if (roles[i] !== null) {
+			if (roles[i]) {
 				buttons.push(
 					new ButtonBuilder()
 						.setCustomId(`button${i + 1}`)
 						.setLabel(`${roles[i].name}`)
 						.setStyle(ButtonStyle.Secondary)
 				);
-			}
-		}
-
-		// Set the roleMap entries with the button ids and the roles
-		for (let i = 0; i < roles.length; ++i) {
-			roleMap.set(`button${i + 1}`, roles[i]);
-
-			if (roles[i]) { // Check that role exists
 				// Save link between button and the role it assigns
 				database.saveButton(new Button(`button${i + 1}`, roles[i].id));
 			}
-			
 		}
 
 		const buttonRow1 = new ActionRowBuilder()
 			.addComponents(buttons)
+			
 		const embed = new EmbedBuilder()
 			.setTitle('Course Selection Tutorial')
             .setDescription('Read the steps carefully to ensure you that you get into the right class that you are registered for.')
