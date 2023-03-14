@@ -2,9 +2,9 @@ const { ThreadChannel } = require("discord.js");
 const fs = require("node:fs");
 const sqlite3 = require('sqlite3').verbose();
 
-const Course = require('./course');
-const Color = require('./color');
-const Button = require('./button');
+const Course = require('./obj/course');
+const Color = require('./obj/color');
+const Button = require('./obj/button');
 
 const schemaPath = 'data/schema.txt';
 const dbPath = 'data/data.db';

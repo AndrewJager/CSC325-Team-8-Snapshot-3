@@ -1,6 +1,6 @@
 const { SlashCommandBuilder, EmbedBuilder, Embed, PermissionFlagsBits, ButtonStyle, ActionRowBuilder, ButtonBuilder, ActionRow, TeamMemberMembershipState } = require('discord.js');
 
-const Button = require('../button');
+const Button = require('../obj/button');
 
 module.exports = {
 	data: new SlashCommandBuilder()

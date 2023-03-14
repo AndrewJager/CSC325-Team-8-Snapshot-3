@@ -1,5 +1,5 @@
 const { SlashCommandBuilder, ChannelType, PermissionsBitField, PermissionFlagsBits, UserFlagsBitField  } = require('discord.js');
-const Course = require('../course');
+const Course = require('../obj/course');
 const Color = require('color');
 const fs = require('fs');
 
