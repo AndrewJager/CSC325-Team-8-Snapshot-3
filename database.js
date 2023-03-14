@@ -11,96 +11,83 @@ const dbPath = 'data/data.db';
 const dbEditTable = 'edits';
 const comment = '--';
 
-module.exports = {
-    setup: function () {
-      	// setup database
-        let db = new sqlite3.Database(dbPath);
-
-        // Setup edits table, if it hasn't been done already
-        initDB(db, dbEditTable).then(cat => {
-            let editsCount = 0;
-            // Get number of edits that have been run
-            db.get('select count(editID) as editCount from edits', 
-            {}, (err, row) => {
-                editsCount = row.editCount;
-
-                // Run database commands from schema file
-                fs.readFile(schemaPath, function(err, f){
-                    var lines = f.toString().split(/\r?\n/); // '/n' doesn't work, but this does
-
-                    // Remove comments
-                    lines = lines.filter(function(item) {
-                        return item.toString().substring(0, 2) !== comment;
-                    });
-                    var sqlCommands = lines.join('').split('^');
-        
-                    // Remove whitespace
-                    for (let i = 0; i < sqlCommands.length; i++) {
-                        sqlCommands[i] = sqlCommands[i].trim();
-                    } 
-
-                    // Run schema edits that have not been run previously
-                    runDBEdits(db, sqlCommands, editsCount);
-                });
-            });
-        });
-    },
-
-    saveCourse: function(course) {
-        let db = new sqlite3.Database(dbPath);
-
-        course.saveToDB(db);
-    },
-
-    getAllCourses: function() {
-        let db = new sqlite3.Database(dbPath);
-
-        return Course.getAllCourses(db);
-    },
-
-    deleteCourse: function(dept, code, semester) {
-        let db = new sqlite3.Database(dbPath);
-
-        return Course.deleteCourse(db, dept, code, semester);
-    },
-
-    courseExists(dept, code, semester) {
-        let db = new sqlite3.Database(dbPath);
-
-        return Course.courseExists(db, dept, code, semester);
-    },
-
-    getAvailableColor() {
-        let db = new sqlite3.Database(dbPath);
-
-        return Color.getAvailableColor(db);
-    },
-
-    setColorUsed(hex) {
-        let db = new sqlite3.Database(dbPath);
-
-        return Color.setColorUsed(db, hex);
-    },
-
-    saveButton: function(button) {
-        let db = new sqlite3.Database(dbPath);
-
-        button.saveToDB(db);
-    },
-
-    deleteAllButtons: function() {
-        let db = new sqlite3.Database(dbPath);
-
-        return Button.deleteAll(db);
-    },
-
-    getRoleIDByButtonID: function(btnID) {
-        let db = new sqlite3.Database(dbPath);
-        
-        return Button.getRoleIDByButtonID(db, btnID)
+class Database {
+    constructor () {    
+        this.db = new sqlite3.Database(dbPath);
     }
-};
 
+    setup() {
+      // Setup edits table, if it hasn't been done already
+      initDB(this.db, dbEditTable).then(cat => {
+          let editsCount = 0;
+          // Get number of edits that have been run
+          let alsoDB = this.db; // Assign a local variable to db, as 'this' refers to something else in callback method
+          this.db.get('select count(editID) as editCount from edits', 
+          {}, (err, row) => {
+              editsCount = row.editCount;
+
+              // Run database commands from schema file
+              fs.readFile(schemaPath, function(err, f){
+                  var lines = f.toString().split(/\r?\n/); // '/n' doesn't work, but this does
+
+                  // Remove comments
+                  lines = lines.filter(function(item) {
+                      return item.toString().substring(0, 2) !== comment;
+                  });
+                  var sqlCommands = lines.join('').split('^');
+      
+                  // Remove whitespace
+                  for (let i = 0; i < sqlCommands.length; i++) {
+                      sqlCommands[i] = sqlCommands[i].trim();
+                  } 
+
+                  // Run schema edits that have not been run previously
+                  runDBEdits(alsoDB, sqlCommands, editsCount);
+              });
+          });
+      });
+  }
+
+  saveCourse(course) {
+      course.saveToDB(this.db);
+  }
+
+  getAllCourses() {
+      return Course.getAllCourses(this.db);
+  }
+
+  deleteCourse (dept, code, semester) {
+      return Course.deleteCourse(this.db, dept, code, semester);
+  }
+
+  courseExists(dept, code, semester) {
+      return Course.courseExists(this.db, dept, code, semester);
+  }
+
+  getAvailableColor() {
+      return Color.getAvailableColor(this.db);
+  }
+
+  setColorUsed(hex) {
+      return Color.setColorUsed(this.db, hex);
+  }
+
+  saveButton (button) {
+      button.saveToDB(this.db);
+  }
+
+  deleteAllButtons() {
+      return Button.deleteAll(this.db);
+  }
+
+  getRoleIDByButtonID(btnID) {
+      return Button.getRoleIDByButtonID(this.db, btnID)
+  }
+}
+module.exports = Database;
+
+
+// Private methods, because js doesn't seem to have actual private functions for classes
 
 function initDB(db, editTable) {
     return new Promise((resolve, reject) => {

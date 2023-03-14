@@ -4,7 +4,8 @@ const wait = require('node:timers/promises').setTimeout;
 const fs = require("node:fs");
 const path = require("node:path");
 
-const database = require('./database');
+const db = require('./database');
+const database = new db();
 
 // Import token from private config file
 const {token} = require('./config.json');
