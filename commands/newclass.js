@@ -2,6 +2,7 @@ const { SlashCommandBuilder, ChannelType, PermissionsBitField, PermissionFlagsBi
 const Course = require('../obj/course');
 const Color = require('color');
 const fs = require('fs');
+const { LIMIT_LENGTH } = require('sqlite3');
 
 module.exports = {
 	data: new SlashCommandBuilder()
@@ -11,13 +12,33 @@ module.exports = {
 		.addStringOption((option) => option.setName('dept').setDescription('The class dept (without the class number)').setRequired(true))
 		.addStringOption((option) => option.setName('classcode').setDescription('The class number (without the dept)').setRequired(true))
 		.addStringOption((option) => option.setName('semester').setDescription('The class semester (example: "Fall 2022"').setRequired(true))
+        
+        .addBooleanOption((option) => option.setName('videos').setDescription('Does this class require videos (Zoom Video recordings, or other) to be created? (True/False)').setRequired(true))
+        //meet day selection
+        .addStringOption((option) => option.setName('meet-day').setDescription('Input the day(s) to which the class meets').setRequired(false)
+            .addChoices( {name: 'mon', value:'Monday'}, {name: 'tue', value:'Tuesday'}, {name: 'wed', value:'Wednesday'}, {name: 'thur', value:'Thursday'}, {name: 'fri', value:'Friday'}))
+        .addStringOption((option) => option.setName('second-day').setDescription('Input the day(s) to which the class meets').setRequired(false)
+            .addChoices( {name: 'mon', value:'Monday'}, {name: 'tue', value:'Tuesday'}, {name: 'wed', value:'Wednesday'}, {name: 'thur', value:'Thursday'}, {name: 'fri', value:'Friday'}))
+        //time
+        .addStringOption((option) => option.setName('times').setDescription('Input the meeting times (Start Time (AM/PM) - End Time (AM/PM)').setRequired(false))
+        //zoom
+        .addStringOption((option) => option.setName('zoom').setDescription('Paste the Zoom link for the class').setRequired(false))
         .addStringOption((option) => option.setName('cohabitate').setDescription('Select a class to cohabitate with').setRequired(false)
         .setAutocomplete(true)),
 	async execute(interaction, database) {
 		const dept = interaction.options.getString('dept').toUpperCase();
 		const course = interaction.options.getString('classcode');
 		const semester = interaction.options.getString('semester');
+        //video parameter
+        const video =  interaction.options.getBoolean('videos');
+        //zoom parameters
+        const dayOne = interaction.options.getString('meet-day');
+        const dayTwo = interaction.options.getString('second-day');
+        const time = interaction.options.getString('times');
+        const link = interaction.options.getString('zoom');
         
+        console.log(link);
+
         //howto array
         const howArray = fs.readFileSync('./howto.txt').toString().split("\n");
 
@@ -74,7 +95,9 @@ module.exports = {
                 });
             }
 
-            // Create the channels, and restrict them to the student role
+
+
+            // template permissions and student id
             const studentRoleID = interaction.guild.roles.cache.find(role => role.name === studentsRole).id;
             const profChannelPerms = [{id: interaction.guild.id,
                                 deny: [PermissionsBitField.Flags.ViewChannel]},
@@ -85,6 +108,8 @@ module.exports = {
                                     PermissionsBitField.Flags.CreatePrivateThreads,
                                     PermissionsBitField.Flags.CreatePublicThreads]}];
 
+            //creatre channels => check for video parameters first
+            if (video === true) {
             interaction.guild.channels.create({
                 name: dept + ' ' + course + ' - ' + semester,
                 type: ChannelType.GuildCategory,
@@ -107,8 +132,10 @@ module.exports = {
                     type: ChannelType.GuildText,
                     parent: category.id,
                     permissionOverwrites: profChannelPerms
-                });
-                interaction.guild.channels.create({
+                }).then(channel => {
+                    channel.send("**Zoom Address**:         "+ link + "\n" + "**Class Days**: " + dayOne + ', ' + dayTwo + "\n" + "**Class Time**: " + time + "\n" + 'Note: You have to use SSO for UMICH when connecting to Zoom, using your UMICH ID')
+                })
+                    interaction.guild.channels.create({
                     name: 'how-to-make-a-video',
                     type: ChannelType.GuildText,
                     parent: category.id,
@@ -129,11 +156,50 @@ module.exports = {
                     parent: category.id
                 });
             });
-            
             await interaction.reply({ content: warning + 'Created class ' + dept
                             + ' ' + course + ' in semester ' + semester, ephemeral: true });
         }
-	},
+        else {
+            interaction.guild.channels.create({
+                name: dept + ' ' + course + ' - ' + semester,
+                type: ChannelType.GuildCategory,
+                permissionOverwrites: [{
+                    id: interaction.guild.id,
+                    deny: [PermissionsBitField.Flags.ViewChannel]},
+
+                    {id: studentRoleID,
+                    allow: [PermissionsBitField.Flags.ViewChannel],
+                    deny: [PermissionsBitField.Flags.CreateInstantInvite]}]})
+            .then(category => {
+                interaction.guild.channels.create({
+                    name: 'announcements-' + course,
+                    type: ChannelType.GuildText,
+                    parent: category.id,
+                    permissionOverwrites: profChannelPerms
+                });
+                interaction.guild.channels.create({
+                    name: 'zoom-meeting-info-' + course,
+                    type: ChannelType.GuildText,
+                    parent: category.id,
+                    permissionOverwrites: profChannelPerms
+                }).then(channel => {
+                    channel.send("**Zoom Address**:         "+ link + "\n" + "**Class Days**: " + dayOne + ', ' + dayTwo + "\n" + "**Class Time**: " + time + "\n" + 'Note: You have to use SSO for UMICH when connecting to Zoom, using your UMICH ID')
+                })
+                interaction.guild.channels.create({
+                    name: 'introduce-yourself',
+                    type: ChannelType.GuildText,
+                    parent: category.id
+                });
+                interaction.guild.channels.create({
+                    name: 'chat',
+                    type: ChannelType.GuildText,
+                    parent: category.id
+                });
+            });
+            await interaction.reply({ content: warning + 'Created class ' + dept
+                            + ' ' + course + ' in semester ' + semester, ephemeral: true });
+        }
+	}},
     async autocomplete(interaction, database) {
 		const focusedValue = interaction.options.getFocused();
 
