@@ -25,6 +25,16 @@ class Button {
         });   
     }
 
+    static deleteButtonsStartingWith(db, btnMsgName) {
+        return new Promise((resolve, reject)=>{
+            let c = 'DELETE FROM ' + this.tableName
+                + ' WHERE buttonID LIKE $btnName';
+            db.run(c, 
+                {$btnName: btnMsgName + '%'}, 
+                (err, rows) => {resolve();});  
+        });   
+    }
+
     static getRoleIDByButtonID(db, btnID) {
         return new Promise((resolve, reject)=>{
             db.get('SELECT roleID FROM ' + this.tableName

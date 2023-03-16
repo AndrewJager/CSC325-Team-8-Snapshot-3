@@ -80,6 +80,10 @@ class Database {
       return Button.deleteAll(this.db);
   }
 
+  deleteButtonsStartingWith(btnMsgName) {
+    return Button.deleteButtonsStartingWith(this.db, btnMsgName);
+  }
+
   getRoleIDByButtonID(btnID) {
       return Button.getRoleIDByButtonID(this.db, btnID)
   }

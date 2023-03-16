@@ -7,18 +7,20 @@ module.exports = {
 		.setName('courses')
 		.setDescription('Create a message to allow students to assign roles to themselves')
 		.setDefaultMemberPermissions(PermissionFlagsBits.Administrator)
-		.addRoleOption(option => option.setName('role1').setDescription('1st role you want to add.').setRequired(true))
-		.addRoleOption(option => option.setName(`role2`).setDescription('2nd role you want to add.').setRequired(false))
-		.addRoleOption(option => option.setName(`role3`).setDescription('3nd role you want to add.').setRequired(false))
-		.addRoleOption(option => option.setName(`role4`).setDescription('4th role you want to add.').setRequired(false))
-		.addRoleOption(option => option.setName(`role5`).setDescription('5th role you want to add.').setRequired(false)),
+		.addRoleOption(option => option.setName(`class1`).setDescription('Student role for first class').setRequired(true))
+		.addRoleOption(option => option.setName(`class2`).setDescription('Student role for second class').setRequired(false))
+		.addRoleOption(option => option.setName(`class3`).setDescription('Student role for third class').setRequired(false))
+		.addRoleOption(option => option.setName(`class4`).setDescription('Student role for fourth class').setRequired(false))
+		.addRoleOption(option => option.setName(`class5`).setDescription('Student role for fifth class').setRequired(false)),
 
 	async execute(interaction, database) {
 		const roles = [];
 		const buttons = [];
 
+		const btnNameBase = 'classBtn';
+
 		// Delete existing buttons from database
-		await database.deleteAllButtons();
+		await database.deleteButtonsStartingWith(btnNameBase);
 
 		// TODO: Should we delete existing role assignment messages? Would need to store their ids
 
@@ -29,14 +31,15 @@ module.exports = {
 		// Loop through the roles array and create a button for each role
 		for (i = 0; i < roles.length; ++i) {
 			if (roles[i]) {
+				const btnID = btnNameBase + (i + 1);
 				buttons.push(
 					new ButtonBuilder()
-						.setCustomId(`button${i + 1}`)
+						.setCustomId(btnID)
 						.setLabel(`${roles[i].name}`)
 						.setStyle(ButtonStyle.Secondary)
 				);
 				// Save link between button and the role it assigns
-				database.saveButton(new Button(`button${i + 1}`, roles[i].id));
+				database.saveButton(new Button(btnID, roles[i].id));
 			}
 		}
 
