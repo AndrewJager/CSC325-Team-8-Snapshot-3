@@ -25,7 +25,7 @@ module.exports = {
 		// TODO: Should we delete existing role assignment messages? Would need to store their ids
 
 		for (i = 1; i <= 5; ++i) {
-			roles.push(interaction.options.getRole(`role${i}`));
+			roles.push(interaction.options.getRole(`class${i}`));
 		}
 
 		// Loop through the roles array and create a button for each role
