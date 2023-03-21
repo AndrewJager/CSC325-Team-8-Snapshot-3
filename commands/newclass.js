@@ -94,7 +94,7 @@ module.exports = {
             const studentRoleID = interaction.guild.roles.cache.find(role => role.name === studentsRole).id;
 
             if (cohabitate) {
-                const cohabitateGroup = interaction.guild.channels.cache.find(channel => channel.name.startsWith('CSC'));
+                const cohabitateGroup = interaction.guild.channels.cache.find(channel => channel.name === cohabitate);
                 warning += 'Cohabitating with ' + cohabitate + '. No channels have been created! ' + '\n';
 
                 // Set permissions in category
