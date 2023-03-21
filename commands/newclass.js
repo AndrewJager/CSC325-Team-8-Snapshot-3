@@ -43,6 +43,9 @@ module.exports = {
 
         // Any message that should not cause the class creation to abort should be added to this variable
         let warning = "";
+
+        // Default role color
+        let studentColor = "#ffffff";
         
         const dbv = await database.courseExists(dept, course, semester);
         if (dbv) {
@@ -51,16 +54,13 @@ module.exports = {
             
             const studentsRole = course + " Students";
             const veteranRole = course + " Veteran";
-
             
             // Create student role, if it doesn't already exist
             if (!interaction.guild.roles.cache.find(role => role.name == studentsRole)) {
-                let studentColor = await database.getAvailableColor();
+                studentColor = await database.getAvailableColor();
                 if (studentColor === "No available color") {
-                    studentColor = "#ffffff";
                     warning += 'All colors in the database have been used! Defaulting student role color to #FFFFFF' + '\n';
                 }
-
                 await interaction.guild.roles.create({
                     name: studentsRole,
                     permissions: [PermissionsBitField.Flags.SendMessages,
@@ -84,7 +84,7 @@ module.exports = {
                                 PermissionsBitField.Flags.ChangeNickname,
                                 PermissionsBitField.Flags.AddReactions, 
                                 PermissionsBitField.Flags.AttachFiles],
-                    color: Color(studentColor).darken(0.4).hex()
+                    color: Color("#"+studentColor).darken(0.4).hex()
                 });
             }
 
