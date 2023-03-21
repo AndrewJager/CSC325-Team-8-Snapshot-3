@@ -42,7 +42,7 @@ You'll need to install the sqlite library with the following command: `npm insta
 
 
 ## Starter Code
-The starter code for this bot was from [Chase C's tutorial bot](https://github.com/Meapers0/Tutorial-bot).
+The starter code for this bot was from [Chase C's tutorial bot](https://github.com/Meapers0/Tutorial-bot), following [this guide](https://discordjs.guide/).
 
 ## Previous Snapshots
 Snapshot #1 - https://github.com/AndrewJager/CSC325-Team-8-Snapshot-1
