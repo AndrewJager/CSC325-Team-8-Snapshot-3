@@ -45,7 +45,7 @@ module.exports = {
         let warning = "";
 
         // Default role color
-        let studentColor = "#ffffff";
+        let studentColor = "";
         
         const dbv = await database.courseExists(dept, course, semester);
         if (dbv) {
@@ -54,11 +54,17 @@ module.exports = {
             
             const studentsRole = course + " Students";
             const veteranRole = course + " Veteran";
-            
+            let rolesList = [...interaction.guild.roles.cache.values()]
+            // sort in the actual order shown in list, internal position is the opposite
+            rolesList.sort(function(a, b) {
+                return b.position - a.position;
+            });
+            const studentRoles = rolesList.filter(item => item.name.includes('Students'));
             // Create student role, if it doesn't already exist
             if (!interaction.guild.roles.cache.find(role => role.name == studentsRole)) {
                 studentColor = await database.getAvailableColor();
                 if (studentColor === "No available color") {
+                    studentColor = "ffffff";
                     warning += 'All colors in the database have been used! Defaulting student role color to #FFFFFF' + '\n';
                 }
                 await interaction.guild.roles.create({
@@ -69,13 +75,15 @@ module.exports = {
                                 PermissionsBitField.Flags.ChangeNickname,
                                 PermissionsBitField.Flags.AddReactions, 
                                 PermissionsBitField.Flags.AttachFiles],
-                    color: studentColor
+                    color: studentColor,
+                    position: findPosition(studentsRole, studentRoles)
                 });
 
                 database.setColorUsed(studentColor);
             }
             // Create veteran role, if it doesn't already exist
             if (!interaction.guild.roles.cache.find(role => role.name == veteranRole)) {
+                const veteranRoles = rolesList.filter(item => item.name.includes('Veteran'));
                 await interaction.guild.roles.create({
                     name: veteranRole,
                     permissions: [PermissionsBitField.Flags.SendMessages,
@@ -84,7 +92,8 @@ module.exports = {
                                 PermissionsBitField.Flags.ChangeNickname,
                                 PermissionsBitField.Flags.AddReactions, 
                                 PermissionsBitField.Flags.AttachFiles],
-                    color: Color("#"+studentColor).darken(0.4).hex()
+                    color: Color("#"+studentColor).darken(0.4).hex(),
+                    position: findPosition(veteranRole, veteranRoles)
                 });
             }
 
@@ -240,4 +249,30 @@ module.exports = {
 
 function getCatName(dept, code, semester) {
     return dept + ' ' + code + ' - ' + semester;
+}
+
+// find new position for new student or veteran role
+function findPosition(name, array) {
+    let number = parseInt(name);
+    let largestNum = parseInt(array[0].name);
+    let smallestNum = parseInt(array[array.length - 1].name);
+
+    // add role above role with the largest dept code
+    if (number > largestNum) {
+        return array[0].position + 1;
+    }
+
+    // add role below role with the smallest dept code
+    if (number < smallestNum) {
+        return array[array.length - 1].position;
+    }
+
+    // Find pos where role would be inserted
+    for (var i = 0; i < array.length; ++i) {
+        let currentNumber = parseInt(array[i].name);
+
+        if (number > currentNumber) {
+            return array[i].position + 1;
+        }
+    }
 }
