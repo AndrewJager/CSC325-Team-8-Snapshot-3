@@ -253,6 +253,12 @@ function getCatName(dept, code, semester) {
 
 // find new position for new student or veteran role
 function findPosition(name, array) {
+
+    // no student or veteran roles exist yet
+    if (array.length == 0) {
+        return 0;
+    }
+
     let number = parseInt(name);
     let largestNum = parseInt(array[0].name);
     let smallestNum = parseInt(array[array.length - 1].name);
