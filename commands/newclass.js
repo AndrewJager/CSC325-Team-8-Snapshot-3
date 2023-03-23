@@ -83,6 +83,9 @@ module.exports = {
             }
             // Create veteran role, if it doesn't already exist
             if (!interaction.guild.roles.cache.find(role => role.name == veteranRole)) {
+                const studentRole = interaction.guild.roles.cache.find(role => role.name == studentsRole);
+                const studentRoleColor = studentRole.color;
+
                 const veteranRoles = rolesList.filter(item => item.name.includes('Veteran'));
                 await interaction.guild.roles.create({
                     name: veteranRole,
@@ -92,7 +95,7 @@ module.exports = {
                                 PermissionsBitField.Flags.ChangeNickname,
                                 PermissionsBitField.Flags.AddReactions, 
                                 PermissionsBitField.Flags.AttachFiles],
-                    color: Color("#"+studentColor).darken(0.4).hex(),
+                    color: Color(studentRoleColor).darken(0.4).hex(),
                     position: findPosition(veteranRole, veteranRoles)
                 });
             }
