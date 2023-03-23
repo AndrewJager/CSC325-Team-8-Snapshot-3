@@ -10,7 +10,7 @@ const database = new db();
 // Import token from private config file
 const {token} = require('./config.json');
 
-const client = new Client({intents: [GatewayIntentBits.Guilds]});
+const client = new Client({intents: [GatewayIntentBits.Guilds, GatewayIntentBits.GuildMembers]});
 client.commands = new Collection();
 
 // Import commands

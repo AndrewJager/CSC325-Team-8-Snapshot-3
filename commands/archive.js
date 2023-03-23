@@ -20,20 +20,25 @@ module.exports = {
 		async execute(interaction) {
 			const number = interaction.options.getInteger('class-num');
 			const channel = interaction.options.getChannel('cluster');
-			const classStu = interaction.guild.roles.cache.find(role => role.name === `${number}` + ' Student'); //swap with role id with prof permission?
+			const classStu = interaction.guild.roles.cache.find(role => role.name === `${number}` + ' Students'); //swap with role id with prof permission?
 			const classVet = interaction.guild.roles.cache.find(role => role.name === `${number}` + ' Veteran');
+			
 			if (!classVet) {interaction.guild.roles.create({name: `${number}` + ' Veteran'})}
 			if (!classStu) {await interaction.reply({content: 'There is no matching student role for that class number: ' + number, ephemeral: true});}
-			const list = await interaction.guild.members.fetch();	
+			
+			const list = await interaction.guild.members.fetch();
+			var rolesChanged = 0;
 			//this could probably be optimized by using .filter, look into it later 
 			for(i = 0; i < list.size; i++){ //loop through all students who have the classStu role
 				var member = list.at(i); 
 				if (member.roles.cache.some(role => role === classStu)) {
 					member.roles.add(classVet); //add class-veteran role
 					member.roles.remove(classStu);//remove classStu role
+					rolesChanged = rolesChanged + 1
 				}
 			}
 			channel.permissionOverwrites.delete(classStu);//remove permission from classStu to access class cluster
-			await interaction.reply({content: 'Did Something', ephemeral: true});
+			await interaction.reply({content: 'Archived class ' + channel.name + '\n' + 'Users updated from student to veteran role: '
+				+ rolesChanged, ephemeral: true});
 		}
 }
