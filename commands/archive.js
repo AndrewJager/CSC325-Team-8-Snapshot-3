@@ -10,16 +10,14 @@ module.exports = {
 		.setDescription('Channel cluster to archive')
 		.setRequired(true)
 		.addChannelTypes(ChannelType.GuildCategory)
-		)
-		.addIntegerOption( option =>
-			option.setName('class-num')
-			.setDescription('Class number')
-			.setRequired(true)
 		),
 		
 		async execute(interaction) {
-			const number = interaction.options.getInteger('class-num');
+			//const number = interaction.options.getInteger('class-num');
 			const cluster = interaction.options.getChannel('cluster');
+			// get class num from category name
+			const number = parseInt(cluster.name.substring(4, 7));
+			// todo: add something to handle cohabitated classes
 			const classStu = interaction.guild.roles.cache.find(role => role.name === `${number}` + ' Students'); //swap with role id with prof permission?
 			const classVet = interaction.guild.roles.cache.find(role => role.name === `${number}` + ' Veteran');
 			
@@ -38,8 +36,9 @@ module.exports = {
 				}
 			}
 			cluster.permissionOverwrites.delete(classStu);//remove permission from classStu to access class cluster
+			cluster.setName(cluster.name + " (Archived)");
 			cluster.children.cache.forEach(channel => channel.permissionOverwrites.delete(classStu)); //remove permission from individual channels within the cluster
-			await interaction.reply({content: 'Archived class ' + channel.name + '\n' + 'Users updated from student to veteran role: '
+			await interaction.reply({content: 'Archived class ' + cluster.name + '\n' + 'Users updated from student to veteran role: '
 				+ rolesChanged, ephemeral: true});
 		}
 }
