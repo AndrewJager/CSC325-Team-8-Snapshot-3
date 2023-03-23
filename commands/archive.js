@@ -19,7 +19,7 @@ module.exports = {
 		
 		async execute(interaction) {
 			const number = interaction.options.getInteger('class-num');
-			const channel = interaction.options.getChannel('cluster');
+			const cluster = interaction.options.getChannel('cluster');
 			const classStu = interaction.guild.roles.cache.find(role => role.name === `${number}` + ' Students'); //swap with role id with prof permission?
 			const classVet = interaction.guild.roles.cache.find(role => role.name === `${number}` + ' Veteran');
 			
@@ -37,7 +37,8 @@ module.exports = {
 					rolesChanged = rolesChanged + 1
 				}
 			}
-			channel.permissionOverwrites.delete(classStu);//remove permission from classStu to access class cluster
+			cluster.permissionOverwrites.delete(classStu);//remove permission from classStu to access class cluster
+			cluster.children.cache.forEach(channel => channel.permissionOverwrites.delete(classStu)); //remove permission from individual channels within the cluster
 			await interaction.reply({content: 'Archived class ' + channel.name + '\n' + 'Users updated from student to veteran role: '
 				+ rolesChanged, ephemeral: true});
 		}
