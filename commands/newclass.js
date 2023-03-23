@@ -104,6 +104,14 @@ module.exports = {
 
             // template permissions and student id
             const studentRoleID = interaction.guild.roles.cache.find(role => role.name === studentsRole).id;
+            const profChannelPerms = [{id: interaction.guild.id,
+                deny: [PermissionsBitField.Flags.ViewChannel]},
+                {id: studentRoleID,
+                allow: [PermissionsBitField.Flags.ViewChannel],
+                deny: [PermissionsBitField.Flags.SendMessages,
+                    PermissionsBitField.Flags.CreateInstantInvite,
+                    PermissionsBitField.Flags.CreatePrivateThreads,
+                    PermissionsBitField.Flags.CreatePublicThreads]}];
 
             if (cohabitate) {
                 const cohabitateGroup = interaction.guild.channels.cache.find(channel => channel.name === cohabitate);
@@ -114,29 +122,16 @@ module.exports = {
 
                 // Set permissions in child channels (the ones that need it)
                 const announcementsChannel = cohabitateGroup.children.cache.find(c => c.name.startsWith("announcements"));
-                announcementsChannel.permissionOverwrites.edit(studentRoleID, { ViewChannel: true, 
-                    SendMessages: false, CreateInstantInvite: false, CreatePrivateThreads: false,
-                    CreatePublicThreads: false });
+                announcementsChannel.permissionOverwrites.edit(studentRoleID, profChannelPerms);
                 const zoomChannel = cohabitateGroup.children.cache.find(c => c.name.startsWith("zoom-meeting-info"));
-                zoomChannel.permissionOverwrites.edit(studentRoleID, { ViewChannel: true, 
-                    SendMessages: false, CreateInstantInvite: false, CreatePrivateThreads: false,
-                    CreatePublicThreads: false });
+                zoomChannel.permissionOverwrites.edit(studentRoleID,profChannelPerms);
                 const videoChannel = cohabitateGroup.children.cache.find(c => c.name.startsWith("how-to-make-a-video"));
                 if (videoChannel) {
-                    videoChannel.permissionOverwrites.edit(studentRoleID, { ViewChannel: true, 
-                        SendMessages: false, CreateInstantInvite: false, CreatePrivateThreads: false,
-                        CreatePublicThreads: false });
+                    videoChannel.permissionOverwrites.edit(studentRoleID, profChannelPerms);
                 }
             }
             else {
-                const profChannelPerms = [{id: interaction.guild.id,
-                    deny: [PermissionsBitField.Flags.ViewChannel]},
-                    {id: studentRoleID,
-                    allow: [PermissionsBitField.Flags.ViewChannel],
-                    deny: [PermissionsBitField.Flags.SendMessages,
-                        PermissionsBitField.Flags.CreateInstantInvite,
-                        PermissionsBitField.Flags.CreatePrivateThreads,
-                        PermissionsBitField.Flags.CreatePublicThreads]}];
+
 
                 //create channels => check for video parameters first
                 if (video === true) {
