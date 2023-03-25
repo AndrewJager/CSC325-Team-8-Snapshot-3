@@ -1,5 +1,6 @@
 const { SlashCommandBuilder, ChannelType, PermissionsBitField, PermissionFlagsBits, UserFlagsBitField  } = require('discord.js');
 const Course = require('../obj/course');
+const CatLink = require('../obj/catlink');
 const Color = require('color');
 const fs = require('fs');
 const { LIMIT_LENGTH } = require('sqlite3');
@@ -51,9 +52,9 @@ module.exports = {
         if (dbv) {
                 await interaction.reply({ content: 'Sorry, but class ' + dept + course + ' - ' + semester + ' already exists.', ephemeral: true});
         } else {
-            
             const studentsRole = course + " Students";
             const veteranRole = course + " Veteran";
+
             let rolesList = [...interaction.guild.roles.cache.values()]
             // sort in the actual order shown in list, internal position is the opposite
             rolesList.sort(function(a, b) {
@@ -99,131 +100,158 @@ module.exports = {
                     position: findPosition(veteranRole, veteranRoles)
                 });
             }
+   
+            // Resolve with the category id used by the class
+            new Promise((resolve, reject) => {
+                // template permissions and student id
+                const studentRoleID = interaction.guild.roles.cache.find(role => role.name === studentsRole).id;
+                const profChannelPerms = [{id: interaction.guild.id,
+                    deny: [PermissionsBitField.Flags.ViewChannel]},
+                    {id: studentRoleID,
+                    allow: [PermissionsBitField.Flags.ViewChannel],
+                    deny: [PermissionsBitField.Flags.SendMessages,
+                        PermissionsBitField.Flags.CreateInstantInvite,
+                        PermissionsBitField.Flags.CreatePrivateThreads,
+                        PermissionsBitField.Flags.CreatePublicThreads]}];
 
+                if (cohabitate) {
+                    const cohabitateGroup = interaction.guild.channels.cache.find(channel => channel.name === cohabitate);
+                    warning += 'Cohabitating with ' + cohabitate + '. No channels have been created! ' + '\n';
 
+                    // Set permissions in category
+                    cohabitateGroup.permissionOverwrites.edit(studentRoleID, { ViewChannel: true, CreateInstantInvite: false });
 
-            // template permissions and student id
-            const studentRoleID = interaction.guild.roles.cache.find(role => role.name === studentsRole).id;
-            const profChannelPerms = [{id: interaction.guild.id,
-                deny: [PermissionsBitField.Flags.ViewChannel]},
-                {id: studentRoleID,
-                allow: [PermissionsBitField.Flags.ViewChannel],
-                deny: [PermissionsBitField.Flags.SendMessages,
-                    PermissionsBitField.Flags.CreateInstantInvite,
-                    PermissionsBitField.Flags.CreatePrivateThreads,
-                    PermissionsBitField.Flags.CreatePublicThreads]}];
+                    // Set permissions in child channels (the ones that need it)
+                    const announcementsChannel = cohabitateGroup.children.cache.find(c => c.name.startsWith("announcements"));
+                    announcementsChannel.permissionOverwrites.edit(studentRoleID, profChannelPerms);
+                    const zoomChannel = cohabitateGroup.children.cache.find(c => c.name.startsWith("zoom-meeting-info"));
+                    zoomChannel.permissionOverwrites.edit(studentRoleID,profChannelPerms);
+                    const videoChannel = cohabitateGroup.children.cache.find(c => c.name.startsWith("how-to-make-a-video"));
+                    if (videoChannel) {
+                        videoChannel.permissionOverwrites.edit(studentRoleID, profChannelPerms);
+                    }
 
-            if (cohabitate) {
-                const cohabitateGroup = interaction.guild.channels.cache.find(channel => channel.name === cohabitate);
-                warning += 'Cohabitating with ' + cohabitate + '. No channels have been created! ' + '\n';
+                    database.getCoursesWithCategory(cohabitateGroup.id).then(courses => {
+                        curCoursesTitle = '';
+                        curCoursesNums = '';
+                        for (var i = 0; i < courses.length; i++) {
+                            curCoursesTitle = curCoursesTitle + courses[i].dept + ' ' + courses[i].code + '/';
+                            curCoursesNums = curCoursesNums + courses[i].code + '-';
+                        }
+                        curCoursesTitle = curCoursesTitle + dept + ' ' + course + ' - ' + semester;
+                        curCoursesNums = curCoursesNums + course;
 
-                // Set permissions in category
-                cohabitateGroup.permissionOverwrites.edit(studentRoleID, { ViewChannel: true, CreateInstantInvite: false });
+                        cohabitateGroup.setName(curCoursesTitle);
+                        announcementsChannel.setName('announcements-' + curCoursesNums);
+                        zoomChannel.setName('zoom-meeting-info-' + curCoursesNums);
+                    })
 
-                // Set permissions in child channels (the ones that need it)
-                const announcementsChannel = cohabitateGroup.children.cache.find(c => c.name.startsWith("announcements"));
-                announcementsChannel.permissionOverwrites.edit(studentRoleID, profChannelPerms);
-                const zoomChannel = cohabitateGroup.children.cache.find(c => c.name.startsWith("zoom-meeting-info"));
-                zoomChannel.permissionOverwrites.edit(studentRoleID,profChannelPerms);
-                const videoChannel = cohabitateGroup.children.cache.find(c => c.name.startsWith("how-to-make-a-video"));
-                if (videoChannel) {
-                    videoChannel.permissionOverwrites.edit(studentRoleID, profChannelPerms);
-                }
-            }
-            else {
-
-
-                //create channels => check for video parameters first
-                if (video === true) {
-                    interaction.guild.channels.create({
-                        name: getCatName(dept, course, semester),
-                        type: ChannelType.GuildCategory,
-                        permissionOverwrites: [{
-                            id: interaction.guild.id,
-                            deny: [PermissionsBitField.Flags.ViewChannel]},
-
-                            {id: studentRoleID,
-                            allow: [PermissionsBitField.Flags.ViewChannel],
-                            deny: [PermissionsBitField.Flags.CreateInstantInvite]}]})
-                    .then(category => {
-                        interaction.guild.channels.create({
-                            name: 'announcements-' + course,
-                            type: ChannelType.GuildText,
-                            parent: category.id,
-                            permissionOverwrites: profChannelPerms
-                        });
-                        interaction.guild.channels.create({
-                            name: 'zoom-meeting-info-' + course,
-                            type: ChannelType.GuildText,
-                            parent: category.id,
-                            permissionOverwrites: profChannelPerms
-                        }).then(channel => {
-                            channel.send("**Zoom Address**:         "+ link + "\n" + "**Class Days**: " + dayOne + ', ' + dayTwo + "\n" + "**Class Time**: " + time + "\n" + 'Note: You have to use SSO for UMICH when connecting to Zoom, using your UMICH ID')
-                        })
-                            interaction.guild.channels.create({
-                            name: 'how-to-make-a-video',
-                            type: ChannelType.GuildText,
-                            parent: category.id,
-                            permissionOverwrites: profChannelPerms
-                        }).then(channel => {
-                                for(i in howArray) {
-                                    channel.send(howArray[i])
-                                }
-                            })
-                        interaction.guild.channels.create({
-                            name: 'introduce-yourself',
-                            type: ChannelType.GuildText,
-                            parent: category.id
-                        });
-                        interaction.guild.channels.create({
-                            name: 'chat',
-                            type: ChannelType.GuildText,
-                            parent: category.id
-                        });
-                    });
+                    resolve(cohabitateGroup.id);
                 }
                 else {
-                    interaction.guild.channels.create({
-                        name: getCatName(dept, course, semester),
-                        type: ChannelType.GuildCategory,
-                        permissionOverwrites: [{
-                            id: interaction.guild.id,
-                            deny: [PermissionsBitField.Flags.ViewChannel]},
+                    //create channels => check for video parameters first
+                    if (video === true) {
+                        interaction.guild.channels.create({
+                            name: getCatName(dept, course, semester),
+                            type: ChannelType.GuildCategory,
+                            permissionOverwrites: [{
+                                id: interaction.guild.id,
+                                deny: [PermissionsBitField.Flags.ViewChannel]},
 
-                            {id: studentRoleID,
-                            allow: [PermissionsBitField.Flags.ViewChannel],
-                            deny: [PermissionsBitField.Flags.CreateInstantInvite]}]})
-                    .then(category => {
-                        interaction.guild.channels.create({
-                            name: 'announcements-' + course,
-                            type: ChannelType.GuildText,
-                            parent: category.id,
-                            permissionOverwrites: profChannelPerms
+                                {id: studentRoleID,
+                                allow: [PermissionsBitField.Flags.ViewChannel],
+                                deny: [PermissionsBitField.Flags.CreateInstantInvite]}]})
+                        .then(category => {
+                            interaction.guild.channels.create({
+                                name: 'announcements-' + course,
+                                type: ChannelType.GuildText,
+                                parent: category.id,
+                                permissionOverwrites: profChannelPerms
+                            });
+                            interaction.guild.channels.create({
+                                name: 'zoom-meeting-info-' + course,
+                                type: ChannelType.GuildText,
+                                parent: category.id,
+                                permissionOverwrites: profChannelPerms
+                            }).then(channel => {
+                                channel.send("**Zoom Address**:         "+ link + "\n" + "**Class Days**: " + dayOne + ', ' + dayTwo + "\n" + "**Class Time**: " + time + "\n" + 'Note: You have to use SSO for UMICH when connecting to Zoom, using your UMICH ID')
+                            })
+                                interaction.guild.channels.create({
+                                name: 'how-to-make-a-video',
+                                type: ChannelType.GuildText,
+                                parent: category.id,
+                                permissionOverwrites: profChannelPerms
+                            }).then(channel => {
+                                    for(i in howArray) {
+                                        channel.send(howArray[i])
+                                    }
+                                })
+                            interaction.guild.channels.create({
+                                name: 'introduce-yourself',
+                                type: ChannelType.GuildText,
+                                parent: category.id
+                            });
+                            interaction.guild.channels.create({
+                                name: 'chat',
+                                type: ChannelType.GuildText,
+                                parent: category.id
+                            });
+
+                            resolve(category.id);
                         });
+                    }
+                    else {
                         interaction.guild.channels.create({
-                            name: 'zoom-meeting-info-' + course,
-                            type: ChannelType.GuildText,
-                            parent: category.id,
-                            permissionOverwrites: profChannelPerms
-                        }).then(channel => {
-                            channel.send("**Zoom Address**:         "+ link + "\n" + "**Class Days**: " + dayOne + ', ' + dayTwo + "\n" + "**Class Time**: " + time + "\n" + 'Note: You have to use SSO for UMICH when connecting to Zoom, using your UMICH ID')
-                        })
-                        interaction.guild.channels.create({
-                            name: 'introduce-yourself',
-                            type: ChannelType.GuildText,
-                            parent: category.id
+                            name: getCatName(dept, course, semester),
+                            type: ChannelType.GuildCategory,
+                            permissionOverwrites: [{
+                                id: interaction.guild.id,
+                                deny: [PermissionsBitField.Flags.ViewChannel]},
+
+                                {id: studentRoleID,
+                                allow: [PermissionsBitField.Flags.ViewChannel],
+                                deny: [PermissionsBitField.Flags.CreateInstantInvite]}]})
+                        .then(category => {
+                            interaction.guild.channels.create({
+                                name: 'announcements-' + course,
+                                type: ChannelType.GuildText,
+                                parent: category.id,
+                                permissionOverwrites: profChannelPerms
+                            });
+                            interaction.guild.channels.create({
+                                name: 'zoom-meeting-info-' + course,
+                                type: ChannelType.GuildText,
+                                parent: category.id,
+                                permissionOverwrites: profChannelPerms
+                            }).then(channel => {
+                                channel.send("**Zoom Address**:         "+ link + "\n" + "**Class Days**: " + dayOne + ', ' + dayTwo + "\n" + "**Class Time**: " + time + "\n" + 'Note: You have to use SSO for UMICH when connecting to Zoom, using your UMICH ID')
+                            })
+                            interaction.guild.channels.create({
+                                name: 'introduce-yourself',
+                                type: ChannelType.GuildText,
+                                parent: category.id
+                            });
+                            interaction.guild.channels.create({
+                                name: 'chat',
+                                type: ChannelType.GuildText,
+                                parent: category.id
+                            });
+
+                            resolve(category.id);
                         });
-                        interaction.guild.channels.create({
-                            name: 'chat',
-                            type: ChannelType.GuildText,
-                            parent: category.id
-                        });
-                    });
+                    }
                 }
-            }
-            //Save course to database
-            const courseObj = new Course(dept, course, semester);
-            database.saveCourse(courseObj);
+            }).then(catID => {
+                //Save course to database
+                const courseObj = new Course(dept, course, semester);
+                database.saveCourse(courseObj).then(result => {
+                    // Save link between course and category id
+                    database.getCourseID(dept, course, semester).then(courseID => {
+                        const catLink = new CatLink(courseID, catID);
+                        database.saveCatLink(catLink);
+                    });
+                });
+            })
 
             await interaction.reply({ content: warning + 'Created class ' + dept
                             + ' ' + course + ' in semester ' + semester, ephemeral: true });

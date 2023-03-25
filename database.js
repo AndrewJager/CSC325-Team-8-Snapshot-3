@@ -5,6 +5,7 @@ const sqlite3 = require('sqlite3').verbose();
 const Course = require('./obj/course');
 const Color = require('./obj/color');
 const Button = require('./obj/button');
+const CatLink = require('./obj/catlink');
 
 const schemaPath = 'data/schema.txt';
 const dbPath = 'data/data.db';
@@ -49,7 +50,7 @@ class Database {
   }
 
   saveCourse(course) {
-      course.saveToDB(this.db);
+      return course.saveToDB(this.db);
   }
 
   getAllCourses() {
@@ -60,8 +61,20 @@ class Database {
       return Course.deleteCourse(this.db, dept, code, semester);
   }
 
+  deleteCourseByCatIDandCourseCode(catID, code) {
+    return Course.deleteCourseByCatIDandCourseCode(this.db, catID, code);
+  }
+
   courseExists(dept, code, semester) {
       return Course.courseExists(this.db, dept, code, semester);
+  }
+
+  getCourseID(dept, code, semester) {
+    return Course.getCourseID(this.db, dept, code, semester);
+  }
+
+  getCoursesWithCategory(catID) {
+    return Course.getCoursesWithCategory(this.db, catID);
   }
 
   getAvailableColor() {
@@ -81,11 +94,23 @@ class Database {
   }
 
   deleteButtonsStartingWith(btnMsgName) {
-    return Button.deleteButtonsStartingWith(this.db, btnMsgName);
+      return Button.deleteButtonsStartingWith(this.db, btnMsgName);
   }
 
   getRoleIDByButtonID(btnID) {
       return Button.getRoleIDByButtonID(this.db, btnID)
+  }
+
+  saveCategory(category) {
+    return category.saveToDB(this.db);
+  }
+
+  saveCatLink(catlink) {
+    return catlink.saveToDB(this.db);
+  }
+
+  getLinkCountByCatID(catID) {
+    return CatLink.getLinkCountByCatID(this.db, catID);
   }
 }
 module.exports = Database;

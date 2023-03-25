@@ -10,19 +10,23 @@ module.exports = {
 		.setDescription('Channel cluster to archive')
 		.setRequired(true)
 		.addChannelTypes(ChannelType.GuildCategory)
+		).addIntegerOption( option =>
+			option.setName('class-num')
+			.setDescription('Class number')
+			.setRequired(true)
 		),
 		
-		async execute(interaction) {
-			//const number = interaction.options.getInteger('class-num');
+		async execute(interaction, database) {
+			const classNum = interaction.options.getInteger('class-num');
 			const cluster = interaction.options.getChannel('cluster');
 			// get class num from category name
-			const number = parseInt(cluster.name.substring(4, 7));
-			// todo: add something to handle cohabitated classes
-			const classStu = interaction.guild.roles.cache.find(role => role.name === `${number}` + ' Students'); //swap with role id with prof permission?
-			const classVet = interaction.guild.roles.cache.find(role => role.name === `${number}` + ' Veteran');
 			
-			if (!classVet) {interaction.guild.roles.create({name: `${number}` + ' Veteran'})}
-			if (!classStu) {await interaction.reply({content: 'There is no matching student role for that class number: ' + number, ephemeral: true});}
+			// todo: add something to handle cohabitated classes
+			const classStu = interaction.guild.roles.cache.find(role => role.name === `${classNum}` + ' Students'); //swap with role id with prof permission?
+			const classVet = interaction.guild.roles.cache.find(role => role.name === `${classNum}` + ' Veteran');
+			
+			if (!classVet) {interaction.guild.roles.create({name: `${classNum}` + ' Veteran'})}
+			if (!classStu) {await interaction.reply({content: 'There is no matching student role for that class number: ' + classNum, ephemeral: true});}
 			
 			const list = await interaction.guild.members.fetch();
 			var rolesChanged = 0;
@@ -36,8 +40,19 @@ module.exports = {
 				}
 			}
 			cluster.permissionOverwrites.delete(classStu);//remove permission from classStu to access class cluster
-			cluster.setName(cluster.name + " (Archived)");
 			cluster.children.cache.forEach(channel => channel.permissionOverwrites.delete(classStu)); //remove permission from individual channels within the cluster
+			
+			// Delete course from database
+			database.deleteCourseByCatIDandCourseCode(cluster.id, classNum).then(result => {
+				// Check if any courses are still using the category. If none, then mark the category as 'Archived'
+				database.getLinkCountByCatID(cluster.id).then(linkCount => {
+					if (linkCount === 0) {
+						cluster.setName(cluster.name + " (Archived)");
+					} 
+				})
+			}); 
+
+			
 			await interaction.reply({content: 'Archived class ' + cluster.name + '\n' + 'Users updated from student to veteran role: '
 				+ rolesChanged, ephemeral: true});
 		}

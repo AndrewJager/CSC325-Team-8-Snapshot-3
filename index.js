@@ -29,7 +29,7 @@ for (const file of commandFiles) {
 
 // Event on startup
 client.once(Events.ClientReady, c => {
-    console.log("Team 8 bot is now online!");
+    console.log("Team 2.8 bot is now online!");
     console.log("Logged in as " + c.user.tag);
 
 	database.setup();

@@ -43,5 +43,12 @@ CREATE TABLE Buttons (
 	buttonID TEXT NOT NULL,
 	roleID TEXT NOT NULL
 );
+^
+
+CREATE TABLE Cat_links (
+    courseID TEXT NOT NULL,
+    catID TEXT NOT NULL,
+    FOREIGN KEY(courseID) REFERENCES Courses(course_id)
+)
 
 -- Do not include the '^' after the last command!
