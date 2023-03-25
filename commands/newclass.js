@@ -150,9 +150,11 @@ module.exports = {
                         curCoursesTitle = curCoursesTitle + dept + ' ' + course + ' - ' + semester;
                         curCoursesNums = curCoursesNums + course;
 
-                        cohabitateGroup.setName(curCoursesTitle);
-                        announcementsChannel.setName('announcements-' + curCoursesNums);
-                        zoomChannel.setName('zoom-meeting-info-' + curCoursesNums);
+                        cohabitateGroup.setName(curCoursesTitle).then(result => {
+                            announcementsChannel.setName('announcements-' + curCoursesNums).then(result => {
+                                zoomChannel.setName('zoom-meeting-info-' + curCoursesNums);
+                            });
+                        });
                     })
 
                     resolve(cohabitateGroup.id);
