@@ -14,22 +14,24 @@ module.exports = {
         .setDefaultMemberPermissions(PermissionFlagsBits.Administrator),
         
                 
-	async execute(message, interaction, database) {
-		const embed = new EmbedBuilder();
-		//const category = 1089030381929504799;
+	async execute(interaction) {
+		// const embed = new EmbedBuilder();
+		// const category = 1089030381929504799;
 
-		//logFunction.handleLogs(); //error #1
+		// logFunction.handleLogs(); //error #1
 
 
 		//Creates Category then channels for it
-		/*interaction.guild.channels.create({ //error #2
-            name: 'Admin Commands',
+		interaction.guild.channels.create({
+            name: 'Bot',
             type: ChannelType.GuildCategory,
-            permissionOverwrites: profChannelPerms
+			permissionOverwrites: [{
+				id: interaction.guild.id,
+				deny: [PermissionsBitField.Flags.ViewChannel]}],
 			})
         .then(category => {
             interaction.guild.channels.create({
-            name: 'Log Channel',
+            name: 'Command-line',
             type: ChannelType.GuildText,
             parent: category.id,
             });
@@ -39,8 +41,8 @@ module.exports = {
 			parent: category.id,
 			});
 		});
-		*/
-
+		
+		await interaction.reply({ content: 'Setup bot channels!', ephemeral: true });
 
 //Need better method of checking if log setup was complete (Make option to set if true or false for start up and create)
 //				/setup true or /setup false
