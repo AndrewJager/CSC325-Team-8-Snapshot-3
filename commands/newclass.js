@@ -123,13 +123,22 @@ module.exports = {
 
                     // Set permissions in child channels (the ones that need it)
                     const announcementsChannel = cohabitateGroup.children.cache.find(c => c.name.startsWith("announcements"));
-                    announcementsChannel.permissionOverwrites.edit(studentRoleID, profChannelPerms);
                     const zoomChannel = cohabitateGroup.children.cache.find(c => c.name.startsWith("zoom-meeting-info"));
-                    zoomChannel.permissionOverwrites.edit(studentRoleID,profChannelPerms);
                     const videoChannel = cohabitateGroup.children.cache.find(c => c.name.startsWith("how-to-make-a-video"));
-                    if (videoChannel) {
-                        videoChannel.permissionOverwrites.edit(studentRoleID, profChannelPerms);
-                    }
+                    announcementsChannel.permissionOverwrites.edit(studentRoleID, { ViewChannel: true, 
+                        SendMessages: false, CreateInstantInvite: false, CreatePrivateThreads: false,
+                        CreatePublicThreads: false }).then(result => {
+                            zoomChannel.permissionOverwrites.edit(studentRoleID, { ViewChannel: true, 
+                                SendMessages: false, CreateInstantInvite: false, CreatePrivateThreads: false,
+                                CreatePublicThreads: false }).then(result => {
+                                    if (videoChannel) {
+                                        videoChannel.permissionOverwrites.edit(studentRoleID, { ViewChannel: true, 
+                                            SendMessages: false, CreateInstantInvite: false, CreatePrivateThreads: false,
+                                            CreatePublicThreads: false });
+                                    }
+                                });
+                        });
+
 
                     database.getCoursesWithCategory(cohabitateGroup.id).then(courses => {
                         curCoursesTitle = '';
