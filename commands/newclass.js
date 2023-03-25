@@ -24,8 +24,8 @@ module.exports = {
         .addStringOption((option) => option.setName('times').setDescription('Input the meeting times (Start Time (AM/PM) - End Time (AM/PM)').setRequired(false))
         //zoom
         .addStringOption((option) => option.setName('zoom').setDescription('Paste the Zoom link for the class').setRequired(false))
-        .addStringOption((option) => option.setName('cohabitate').setDescription('Select a class to cohabitate with').setRequired(false)
-        .setAutocomplete(true)),
+        .addChannelOption((option) => option.setName('cohabitate').setDescription('Select a class to cohabitate with').setRequired(false)
+        .addChannelTypes(ChannelType.GuildCategory)),
 	async execute(interaction, database) {
 		const dept = interaction.options.getString('dept').toUpperCase();
 		const course = interaction.options.getString('classcode');
@@ -37,7 +37,7 @@ module.exports = {
         const dayTwo = interaction.options.getString('second-day');
         const time = interaction.options.getString('times');
         const link = interaction.options.getString('zoom');
-        const cohabitate = interaction.options.getString('cohabitate');
+        const cohabitate = interaction.options.getChannel('cohabitate');
 
         //howto array
         const howArray = fs.readFileSync('./howto.txt').toString().split("\n");
@@ -115,16 +115,15 @@ module.exports = {
                         PermissionsBitField.Flags.CreatePublicThreads]}];
 
                 if (cohabitate) {
-                    const cohabitateGroup = interaction.guild.channels.cache.find(channel => channel.name === cohabitate);
-                    warning += 'Cohabitating with ' + cohabitate + '. No channels have been created! ' + '\n';
+                    warning += 'Cohabitating with ' + cohabitate.name + '. No channels have been created! ' + '\n';
 
                     // Set permissions in category
-                    cohabitateGroup.permissionOverwrites.edit(studentRoleID, { ViewChannel: true, CreateInstantInvite: false });
+                    cohabitate.permissionOverwrites.edit(studentRoleID, { ViewChannel: true, CreateInstantInvite: false });
 
                     // Set permissions in child channels (the ones that need it)
-                    const announcementsChannel = cohabitateGroup.children.cache.find(c => c.name.startsWith("announcements"));
-                    const zoomChannel = cohabitateGroup.children.cache.find(c => c.name.startsWith("zoom-meeting-info"));
-                    const videoChannel = cohabitateGroup.children.cache.find(c => c.name.startsWith("how-to-make-a-video"));
+                    const announcementsChannel = cohabitate.children.cache.find(c => c.name.startsWith("announcements"));
+                    const zoomChannel = cohabitate.children.cache.find(c => c.name.startsWith("zoom-meeting-info"));
+                    const videoChannel = cohabitate.children.cache.find(c => c.name.startsWith("how-to-make-a-video"));
                     announcementsChannel.permissionOverwrites.edit(studentRoleID, { ViewChannel: true, 
                         SendMessages: false, CreateInstantInvite: false, CreatePrivateThreads: false,
                         CreatePublicThreads: false }).then(result => {
@@ -140,7 +139,7 @@ module.exports = {
                         });
 
 
-                    database.getCoursesWithCategory(cohabitateGroup.id).then(courses => {
+                    database.getCoursesWithCategory(cohabitate.id).then(courses => {
                         curCoursesTitle = '';
                         curCoursesNums = '';
                         for (var i = 0; i < courses.length; i++) {
@@ -150,14 +149,14 @@ module.exports = {
                         curCoursesTitle = curCoursesTitle + dept + ' ' + course + ' - ' + semester;
                         curCoursesNums = curCoursesNums + course;
 
-                        cohabitateGroup.setName(curCoursesTitle).then(result => {
+                        cohabitate.setName(curCoursesTitle).then(result => {
                             announcementsChannel.setName('announcements-' + curCoursesNums).then(result => {
                                 zoomChannel.setName('zoom-meeting-info-' + curCoursesNums);
                             });
                         });
                     })
 
-                    resolve(cohabitateGroup.id);
+                    resolve(cohabitate.id);
                 }
                 else {
                     //create channels => check for video parameters first
@@ -267,21 +266,6 @@ module.exports = {
             await interaction.reply({ content: warning + 'Created class ' + dept
                             + ' ' + course + ' in semester ' + semester, ephemeral: true });
 	}},
-    async autocomplete(interaction, database) {
-		const focusedValue = interaction.options.getFocused();
-
-        database.getAllCourses().then(courses => {
-			const classes = [];
-			courses.forEach(course => {
-                classes.push(getCatName(course.dept, course.code, course.semester));
-			});
-			const filtered = classes.filter(course => course.startsWith(focusedValue));
-
-            interaction.respond(
-                filtered.map(choice => ({ name: choice, value: choice })),
-            );
-		});
-	},
 };
 
 function getCatName(dept, code, semester) {
