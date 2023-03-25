@@ -1,8 +1,7 @@
 # CSC325 Team 8 Development
  Development repo for Team 8
 
- Code started from: https://github.com/AndrewJager/CSC325-Team-8-Snapshot-1
-
+ Code started from: https://github.com/AndrewJager/CSC325-Team-8-Snapshot-2 
 
 ## Setup
 To run this bot, you must create a config.json file (in the same directory as index.js) with the following structure:
@@ -46,3 +45,4 @@ The starter code for this bot was from [Chase C's tutorial bot](https://github.c
 
 ## Previous Snapshots
 Snapshot #1 - https://github.com/AndrewJager/CSC325-Team-8-Snapshot-1
+Snapshot #2 - https://github.com/AndrewJager/CSC325-Team-8-Snapshot-2 
