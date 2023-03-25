@@ -45,7 +45,7 @@ module.exports = {
         let warning = "";
 
         // Default role color
-        let studentColor = "#ffffff";
+        let studentColor = "";
         
         const dbv = await database.courseExists(dept, course, semester);
         if (dbv) {
@@ -54,11 +54,17 @@ module.exports = {
             
             const studentsRole = course + " Students";
             const veteranRole = course + " Veteran";
-            
+            let rolesList = [...interaction.guild.roles.cache.values()]
+            // sort in the actual order shown in list, internal position is the opposite
+            rolesList.sort(function(a, b) {
+                return b.position - a.position;
+            });
+            const studentRoles = rolesList.filter(item => /\d\d\d Students/.test(item.name));
             // Create student role, if it doesn't already exist
             if (!interaction.guild.roles.cache.find(role => role.name == studentsRole)) {
                 studentColor = await database.getAvailableColor();
                 if (studentColor === "No available color") {
+                    studentColor = "ffffff";
                     warning += 'All colors in the database have been used! Defaulting student role color to #FFFFFF' + '\n';
                 }
                 await interaction.guild.roles.create({
@@ -69,13 +75,18 @@ module.exports = {
                                 PermissionsBitField.Flags.ChangeNickname,
                                 PermissionsBitField.Flags.AddReactions, 
                                 PermissionsBitField.Flags.AttachFiles],
-                    color: studentColor
+                    color: studentColor,
+                    position: findPosition(studentsRole, studentRoles)
                 });
 
                 database.setColorUsed(studentColor);
             }
             // Create veteran role, if it doesn't already exist
             if (!interaction.guild.roles.cache.find(role => role.name == veteranRole)) {
+                const studentRole = interaction.guild.roles.cache.find(role => role.name == studentsRole);
+                const studentRoleColor = studentRole.color;
+
+                const veteranRoles = rolesList.filter(item => item.name.includes('Veteran'));
                 await interaction.guild.roles.create({
                     name: veteranRole,
                     permissions: [PermissionsBitField.Flags.SendMessages,
@@ -84,7 +95,8 @@ module.exports = {
                                 PermissionsBitField.Flags.ChangeNickname,
                                 PermissionsBitField.Flags.AddReactions, 
                                 PermissionsBitField.Flags.AttachFiles],
-                    color: Color("#"+studentColor).darken(0.4).hex()
+                    color: Color(studentRoleColor).darken(0.4).hex(),
+                    position: findPosition(veteranRole, veteranRoles)
                 });
             }
 
@@ -92,6 +104,14 @@ module.exports = {
 
             // template permissions and student id
             const studentRoleID = interaction.guild.roles.cache.find(role => role.name === studentsRole).id;
+            const profChannelPerms = [{id: interaction.guild.id,
+                deny: [PermissionsBitField.Flags.ViewChannel]},
+                {id: studentRoleID,
+                allow: [PermissionsBitField.Flags.ViewChannel],
+                deny: [PermissionsBitField.Flags.SendMessages,
+                    PermissionsBitField.Flags.CreateInstantInvite,
+                    PermissionsBitField.Flags.CreatePrivateThreads,
+                    PermissionsBitField.Flags.CreatePublicThreads]}];
 
             if (cohabitate) {
                 const cohabitateGroup = interaction.guild.channels.cache.find(channel => channel.name === cohabitate);
@@ -102,29 +122,16 @@ module.exports = {
 
                 // Set permissions in child channels (the ones that need it)
                 const announcementsChannel = cohabitateGroup.children.cache.find(c => c.name.startsWith("announcements"));
-                announcementsChannel.permissionOverwrites.edit(studentRoleID, { ViewChannel: true, 
-                    SendMessages: false, CreateInstantInvite: false, CreatePrivateThreads: false,
-                    CreatePublicThreads: false });
+                announcementsChannel.permissionOverwrites.edit(studentRoleID, profChannelPerms);
                 const zoomChannel = cohabitateGroup.children.cache.find(c => c.name.startsWith("zoom-meeting-info"));
-                zoomChannel.permissionOverwrites.edit(studentRoleID, { ViewChannel: true, 
-                    SendMessages: false, CreateInstantInvite: false, CreatePrivateThreads: false,
-                    CreatePublicThreads: false });
+                zoomChannel.permissionOverwrites.edit(studentRoleID,profChannelPerms);
                 const videoChannel = cohabitateGroup.children.cache.find(c => c.name.startsWith("how-to-make-a-video"));
                 if (videoChannel) {
-                    videoChannel.permissionOverwrites.edit(studentRoleID, { ViewChannel: true, 
-                        SendMessages: false, CreateInstantInvite: false, CreatePrivateThreads: false,
-                        CreatePublicThreads: false });
+                    videoChannel.permissionOverwrites.edit(studentRoleID, profChannelPerms);
                 }
             }
             else {
-                const profChannelPerms = [{id: interaction.guild.id,
-                    deny: [PermissionsBitField.Flags.ViewChannel]},
-                    {id: studentRoleID,
-                    allow: [PermissionsBitField.Flags.ViewChannel],
-                    deny: [PermissionsBitField.Flags.SendMessages,
-                        PermissionsBitField.Flags.CreateInstantInvite,
-                        PermissionsBitField.Flags.CreatePrivateThreads,
-                        PermissionsBitField.Flags.CreatePublicThreads]}];
+
 
                 //create channels => check for video parameters first
                 if (video === true) {
@@ -240,4 +247,36 @@ module.exports = {
 
 function getCatName(dept, code, semester) {
     return dept + ' ' + code + ' - ' + semester;
+}
+
+// find new position for new student or veteran role
+function findPosition(name, array) {
+
+    // no student or veteran roles exist yet
+    if (array.length == 0) {
+        return 0;
+    }
+
+    let number = parseInt(name);
+    let largestNum = parseInt(array[0].name);
+    let smallestNum = parseInt(array[array.length - 1].name);
+
+    // add role above role with the largest dept code
+    if (number > largestNum) {
+        return array[0].position + 1;
+    }
+
+    // add role below role with the smallest dept code
+    if (number < smallestNum) {
+        return array[array.length - 1].position;
+    }
+
+    // Find pos where role would be inserted
+    for (var i = 0; i < array.length; ++i) {
+        let currentNumber = parseInt(array[i].name);
+
+        if (number > currentNumber) {
+            return array[i].position + 1;
+        }
+    }
 }
